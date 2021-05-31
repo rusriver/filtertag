@@ -7,7 +7,7 @@ The API is partially inspired by sirupsen/logrus, though the concepts are differ
 The main difference from classic logging approach, is that here is no concept of "level", instead we operate with the "filter tag". The Filter Tag is arbitrary string, which denotes some specific "layer", or part of code, and you can arbitrarily use any number of these tags. There's no hierarchy of them. Instead, the
 user myst specify a specific list of filter tags to be included in the output, or filtered/included at the visualization app.
 
-This library still lacks the proper documentation, but it was __used in industrial production as early as 2019__, and proved to be very good.
+This library still lacks the proper documentation, but it was __used in industrial production as early as 2019__ at molti.tech and AVTPROM, and proved to be solid good.
 
 It emits only JSON.
 
