@@ -13,5 +13,5 @@ It emits only JSON.
 
 __Interesting__: this library is 100% thread-safe, and has zero locks/mutexes. I.e. it is written in the best spirit of Go language. The concept is summarized in the document Effective Go (a must-read for any Go programmer):
 
-### Do not communicate by sharing memory; instead, share memory by communicating.
+   _Do not communicate by sharing memory; instead, share memory by communicating._
 
