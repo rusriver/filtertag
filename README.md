@@ -9,7 +9,7 @@ user myst specify a specific list of filter tags to be included in the output, o
 
 This library still lacks the proper documentation, but it was __used in industrial production as early as 2019__ at molti.tech and AVTPROM, and proved to be solid good.
 
-It emits only JSON.
+It emits JSON only.
 
 __Interesting__: this library is 100% thread-safe, and has zero locks/mutexes. I.e. it is written in the best spirit of Go language. The concept is summarized in the document Effective Go (a must-read for any Go programmer):
 
