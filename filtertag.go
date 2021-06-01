@@ -176,6 +176,16 @@ func (entry *Entry) SetLogger(logger *Logger) (err error) {
 	return
 }
 
+func (entry *Entry) Copy() *Entry {
+
+	entry2, err := deep_copy.Copy(entry)
+	if err != nil {
+		panic(fmt.Errorf("!!! filtertag.go:157 / *** at \"entry2, err := deep_copy.Copy( entry)\": %v", err))
+	}
+
+	return entry2.(*Entry)
+}
+
 func (entry *Entry) Writer() (w io.Writer) {
 	w = &Writer{
 		Entry: entry,
@@ -213,7 +223,7 @@ func (entry *Entry) Logft(
 
 	entry.rawline, err = json.Marshal(entry.Fields)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:194 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:204 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
 	}
 
 	msg := &LoggerChType{
