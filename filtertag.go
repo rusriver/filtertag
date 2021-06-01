@@ -258,8 +258,9 @@ func (entry *Entry) Log(
 	args ...interface{},
 ) {
 	var filtertag string
-	var ok bool
-	if filtertag, ok = entry.Fields["filtertag"]; !ok {
+	if ft, ok := entry.Fields["filtertag"]; ok {
+		filtertag = ft.(string)
+	} else {
 		filtertag = "info"
 	}
 
