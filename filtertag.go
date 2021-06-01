@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	deep_copy "github.com/mitchellh/copystructure"
@@ -64,11 +65,11 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 	ch_i1 := make(chan *LoggerChType, 500)
 	host, err := os.Hostname()
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:66 / *** at \"host, err	:= os.Hostname()\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:67 / *** at \"host, err	:= os.Hostname()\": %v", err))
 	}
 	executable, err := os.Executable()
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:67 / *** at \"executable, err	:= os.Executable()\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:68 / *** at \"executable, err	:= os.Executable()\": %v", err))
 	}
 
 	entry = &Entry{
@@ -95,7 +96,7 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 					if v, ok := logger.Filtertags[msg.CookedLogLine.Filtertag]; ok && v == true {
 						_, err = logger.Output.Write(msg.CookedLogLine.RawLine)
 						if err != nil {
-							panic(fmt.Errorf("!!! filtertag.go:91 / *** at \"_, err = logger.Output.Write( msg.CookedLogLine.RawLine )\": %v", err))
+							panic(fmt.Errorf("!!! filtertag.go:92 / *** at \"_, err = logger.Output.Write( msg.CookedLogLine.RawLine )\": %v", err))
 						}
 					}
 				case Cmd_GetLogger:
@@ -189,7 +190,7 @@ func (entry *Entry) Copy() *Entry {
 
 	entry2, err := deep_copy.Copy(entry)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:166 / *** at \"entry2, err := deep_copy.Copy( entry)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:167 / *** at \"entry2, err := deep_copy.Copy( entry)\": %v", err))
 	}
 
 	return entry2.(*Entry)
@@ -232,7 +233,7 @@ func (entry *Entry) Logft(
 
 	entry.rawline, err = json.Marshal(entry.Fields)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:213 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:214 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
 	}
 
 	entry.rawline = append(entry.rawline, []byte("\n")...)
