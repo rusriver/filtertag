@@ -77,12 +77,12 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 			"host":       host,
 			"service":    executable,
 			"subsystem":  "",
+			"filtertag":  "info",
 			"ctxpretext": "",
 			"err":        "",
 			"msg":        "",
 		},
-		Filtertag: "info",
-		LoggerCh:  ch_i1,
+		LoggerCh: ch_i1,
 	}
 
 	go func() {
