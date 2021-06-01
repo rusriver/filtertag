@@ -12,9 +12,9 @@ import (
 )
 
 type Logger struct {
-	Output           io.Writer
-	ActiveFiltertags map[string]bool
-	ExitFunc         func(int)
+	Output     io.Writer
+	Filtertags map[string]bool
+	ExitFunc   func(int)
 }
 
 type Entry struct {
@@ -52,7 +52,7 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 	logger := &Logger{
 		// these are defaults, you can change these by API
 		Output: os.Stderr,
-		ActiveFiltertags: map[string]bool{
+		Filtertags: map[string]bool{
 			"info":  true,
 			"error": true,
 			"fatal": true,
@@ -92,7 +92,7 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 			case msg = <-ch_i1:
 				switch msg.Command {
 				case Cmd_WriteLine:
-					if v, ok := logger.ActiveFiltertags[msg.CookedLogLine.Filtertag]; ok && v == true {
+					if v, ok := logger.Filtertags[msg.CookedLogLine.Filtertag]; ok && v == true {
 						_, err = logger.Output.Write(msg.CookedLogLine.RawLine)
 						if err != nil {
 							panic(fmt.Errorf("!!! filtertag.go:91 / *** at \"_, err = logger.Output.Write( msg.CookedLogLine.RawLine )\": %v", err))
