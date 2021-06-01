@@ -100,10 +100,12 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 					}
 				case Cmd_GetLogger:
 					// we can't return the original, because a user may start touching it, and it'll race-condition-crash the program
+
 					logger2, err := deep_copy.Copy(logger)
 					if err != nil {
 						continue
 					}
+
 					func() {
 						defer func() {
 							if errrec := recover(); errrec != nil {
@@ -116,16 +118,21 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 					if err != nil {
 						continue
 					}
+
+					msg.Logger.Output = logger.Output
+
 					select {
 					case msg.ChDown <- msg:
 					default:
 					}
 				case Cmd_SetLogger:
 					// we can't set the original, because a user may start touching it, and it'll race-condition-crash the program
+
 					logger2, _ := deep_copy.Copy(msg.Logger)
 					if err != nil {
 						continue
 					}
+
 					func() {
 						defer func() {
 							if errrec := recover(); errrec != nil {
@@ -135,6 +142,8 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 						err = nil
 						logger = logger2.(*Logger)
 					}()
+
+					logger.Output = msg.Logger.Output
 				case Cmd_FatalExit:
 					logger.ExitFunc(1)
 				}
@@ -180,7 +189,7 @@ func (entry *Entry) Copy() *Entry {
 
 	entry2, err := deep_copy.Copy(entry)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:157 / *** at \"entry2, err := deep_copy.Copy( entry)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:166 / *** at \"entry2, err := deep_copy.Copy( entry)\": %v", err))
 	}
 
 	return entry2.(*Entry)
@@ -223,8 +232,10 @@ func (entry *Entry) Logft(
 
 	entry.rawline, err = json.Marshal(entry.Fields)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:204 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:213 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
 	}
+
+	entry.rawline = append(entry.rawline, []byte("\n")...)
 
 	msg := &LoggerChType{
 		Command: Cmd_WriteLine,
@@ -246,7 +257,7 @@ func (entry *Entry) Log(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft(entry.Filtertag, formatstring, args)
+	entry.Logft(entry.Filtertag, formatstring, args...)
 }
 
 // Filtertag="fatal", and as a special case it commands to exit the program (via ExitFunc / os.Exit())
@@ -254,7 +265,7 @@ func (entry *Entry) Fatal(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("fatal", formatstring, args)
+	entry.Logft("fatal", formatstring, args...)
 	entry.LoggerCh <- &LoggerChType{Command: Cmd_FatalExit}
 }
 
@@ -263,7 +274,7 @@ func (entry *Entry) Panic(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("panic", formatstring, args)
+	entry.Logft("panic", formatstring, args...)
 	err := fmt.Errorf(formatstring, args...)
 	panic(err)
 }
@@ -273,77 +284,77 @@ func (entry *Entry) Trace(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("trace", formatstring, args)
+	entry.Logft("trace", formatstring, args...)
 }
 
 func (entry *Entry) Debug(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("debug", formatstring, args)
+	entry.Logft("debug", formatstring, args...)
 }
 
 func (entry *Entry) Info(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("info", formatstring, args)
+	entry.Logft("info", formatstring, args...)
 }
 
 func (entry *Entry) Warning(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("warning", formatstring, args)
+	entry.Logft("warning", formatstring, args...)
 }
 
 func (entry *Entry) Error(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("error", formatstring, args)
+	entry.Logft("error", formatstring, args...)
 }
 
 func (entry *Entry) Emergency(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("emergency", formatstring, args)
+	entry.Logft("emergency", formatstring, args...)
 }
 
 func (entry *Entry) Alert(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("alert", formatstring, args)
+	entry.Logft("alert", formatstring, args...)
 }
 
 func (entry *Entry) Critical(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("critical", formatstring, args)
+	entry.Logft("critical", formatstring, args...)
 }
 
 func (entry *Entry) Warn(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("warn", formatstring, args)
+	entry.Logft("warn", formatstring, args...)
 }
 
 func (entry *Entry) Notice(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("notice", formatstring, args)
+	entry.Logft("notice", formatstring, args...)
 }
 
 func (entry *Entry) Informational(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("informational", formatstring, args)
+	entry.Logft("informational", formatstring, args...)
 }
 
 func Hello() {
