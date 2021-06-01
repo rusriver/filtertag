@@ -226,8 +226,8 @@ func (entry *Entry) Logft(
 		entry.prev_entry_filtertag = ""
 	}
 
+	entry.Fields["filtertag"] = strings.ToLower(filtertag)
 	entry.Fields["msg"] = fmt.Sprintf(formatstring, args...)
-
 	entry.Fields["timestamp"] = time.Now().Format("2006-01-02 15:04:05.000 MST")
 
 	entry.rawline, err = json.Marshal(entry.Fields)
