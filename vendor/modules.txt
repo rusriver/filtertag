@@ -1,0 +1,5 @@
+# github.com/mitchellh/copystructure v1.2.0
+## explicit
+github.com/mitchellh/copystructure
+# github.com/mitchellh/reflectwalk v1.0.2
+github.com/mitchellh/reflectwalk
