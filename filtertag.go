@@ -167,7 +167,7 @@ func (entry *Entry) GetLogger() (logger *Logger) {
 	return msg.Logger
 }
 
-func (entry *Entry) SetLogger(logger *Logger) (err error) {
+func (entry *Entry) SetLogger(logger *Logger) {
 
 	msg := &LoggerChType{Command: Cmd_SetLogger, Logger: logger}
 
