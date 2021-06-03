@@ -223,7 +223,7 @@ type WriterNestedJSON struct {
 
 func (w *WriterNestedJSON) Write(p []byte) (n int, err error) {
 
-	w.Entry.Fields[w.KeyNestedJSON] = &json.RawMessage(p)
+	w.Entry.Fields[w.KeyNestedJSON] = &(json.RawMessage(p))
 
 	w.Entry.Log("nested json in %v", w.KeyNestedJSON)
 
