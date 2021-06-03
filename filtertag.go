@@ -223,7 +223,8 @@ type WriterNestedJSON struct {
 
 func (w *WriterNestedJSON) Write(p []byte) (n int, err error) {
 
-	w.Entry.Fields[w.KeyNestedJSON] = &(json.RawMessage(p))
+	json := json.RawMessage(p)
+	w.Entry.Fields[w.KeyNestedJSON] = &json
 
 	w.Entry.Log("nested json in %v", w.KeyNestedJSON)
 
@@ -261,7 +262,7 @@ func (entry *Entry) Logft(
 
 	entry.rawline, err = json.Marshal(entry.Fields)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:246 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:247 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
 	}
 
 	entry.rawline = append(entry.rawline, []byte("\n")...)
