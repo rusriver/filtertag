@@ -24,8 +24,8 @@ type Entry struct {
 	LoggerCh chan *LoggerChType
 	ChDown   chan *LoggerChType
 
-	prev_entry_filtertag string
-	rawline              []byte
+	prevEntryFiltertag string
+	rawLine            []byte
 }
 
 type LoggerChType struct {
@@ -274,9 +274,9 @@ func (entry *Entry) Logft(
 
 	// save default filtertag
 	if ft, ok := entry.Fields["filtertag"]; ok {
-		entry.prev_entry_filtertag = ft.(string)
+		entry.prevEntryFiltertag = ft.(string)
 	} else {
-		entry.prev_entry_filtertag = ""
+		entry.prevEntryFiltertag = ""
 	}
 
 	entry.Fields["filtertag"] = strings.ToUpper(filtertag)
@@ -285,25 +285,25 @@ func (entry *Entry) Logft(
 	// THIS MUST STAY HERE NO MATTER WHAT
 	entry.Fields["timestamp"] = time.Now().Format("2006-01-02 15:04:05.000 MST")
 
-	entry.rawline, err = json.Marshal(entry.Fields)
+	entry.rawLine, err = json.Marshal(entry.Fields)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:308 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:308 / *** at \"entry.rawLine, err = json.Marshal( entry.Fields)\": %v", err))
 	}
 
-	entry.rawline = append(entry.rawline, []byte("\n")...)
+	entry.rawLine = append(entry.rawLine, []byte("\n")...)
 
 	msg := &LoggerChType{
 		Command: Cmd_WriteLine,
 		CookedLogLine: &CookedLogLine{
 			Filtertag: filtertag,
-			RawLine:   entry.rawline,
+			RawLine:   entry.rawLine,
 		},
 	}
 
 	entry.LoggerCh <- msg
 
 	// restore default filtertag, if it was set
-	entry.Fields["filtertag"] = entry.prev_entry_filtertag
+	entry.Fields["filtertag"] = entry.prevEntryFiltertag
 
 	entry.Fields["err"] = ""
 	entry.Fields["msg"] = ""
