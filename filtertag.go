@@ -13,9 +13,10 @@ import (
 )
 
 type Logger struct {
-	Output     io.Writer
-	Filtertags map[string]bool
-	ExitFunc   func(int)
+	Output       io.Writer
+	Filtertags   map[string]bool
+	ExitFunc     func(int)
+	OverflowFunc func()
 }
 
 type Entry struct {
@@ -43,7 +44,7 @@ const (
 	Cmd_WriteLine int = iota
 	Cmd_GetLogger
 	Cmd_SetLogger
-	Cmd_FatalExit
+	Cmd_ExitFunc
 )
 
 func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
@@ -53,22 +54,36 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 		// these are defaults, you can change these by API
 		Output: os.Stderr,
 		Filtertags: map[string]bool{
-			"info":  true,
-			"error": true,
-			"fatal": true,
-			"panic": true,
+			"INFO":                        true,
+			"ERROR":                       true,
+			"FATAL":                       true,
+			"PANIC":                       true,
+			"INPRODENV":                   true,
+			"INVESTIGATETOMORROW":         true,
+			"WAKEMEINTHEMIDDLEOFTHENIGHT": true,
+			"EXITFUNC":                    true,
 		},
-		ExitFunc: os.Exit,
 	}
 
-	ch_i1 := make(chan *LoggerChType, 500)
+	logger.ExitFunc = func(i int) {
+		os.Stderr.Sync()
+		os.Exit(i)
+	}
+
+	logger.OverflowFunc = func() {
+		os.Stderr.WriteString("FATAL ERROR AT FILTERTAG: main channel overflow, system failure.\n")
+		os.Stderr.Sync()
+		logger.ExitFunc(1)
+	}
+
+	ch_i1 := make(chan *LoggerChType, 502)
 	host, err := os.Hostname()
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:66 / *** at \"host, err	:= os.Hostname()\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:81 / *** at \"host, err	:= os.Hostname()\": %v", err))
 	}
 	executable, err := os.Executable()
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:67 / *** at \"executable, err	:= os.Executable()\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:82 / *** at \"executable, err	:= os.Executable()\": %v", err))
 	}
 
 	entry = &Entry{
@@ -77,7 +92,7 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 			"host":       host,
 			"service":    executable,
 			"subsystem":  "",
-			"filtertag":  "info",
+			"filtertag":  "INPRODENV",
 			"ctxpretext": "",
 			"err":        "",
 			"msg":        "",
@@ -90,12 +105,15 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 		for {
 			select {
 			case msg = <-ch_i1:
+				if len(ch_i1) >= 500 {
+					logger.OverflowFunc()
+				}
 				switch msg.Command {
 				case Cmd_WriteLine:
 					if v, ok := logger.Filtertags[msg.CookedLogLine.Filtertag]; ok && v == true {
 						_, err = logger.Output.Write(msg.CookedLogLine.RawLine)
 						if err != nil {
-							panic(fmt.Errorf("!!! filtertag.go:91 / *** at \"_, err = logger.Output.Write( msg.CookedLogLine.RawLine )\": %v", err))
+							panic(fmt.Errorf("!!! filtertag.go:109 / *** at \"_, err = logger.Output.Write( msg.CookedLogLine.RawLine )\": %v", err))
 						}
 					}
 				case Cmd_GetLogger:
@@ -144,7 +162,7 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 					}()
 
 					logger.Output = msg.Logger.Output
-				case Cmd_FatalExit:
+				case Cmd_ExitFunc:
 					logger.ExitFunc(1)
 				}
 			case <-ctx.Done():
@@ -157,6 +175,7 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 }
 
 // DO NOT run Get/Set logger concurrently! Only one thread is allowed to run them
+// (technically you can, and it will (kind of) work; but most certainly it's gonna be a bug due to race condition)
 func (entry *Entry) GetLogger() (logger *Logger) {
 
 	if entry.ChDown == nil {
@@ -169,7 +188,7 @@ func (entry *Entry) GetLogger() (logger *Logger) {
 
 	select {
 	case <-time.After(2000 * time.Millisecond):
-		panic(fmt.Errorf(", \"msg = <-entry.ChDown @!! 200\""))
+		panic(fmt.Errorf(", \"msg = <-entry.ChDown @!! 2000\""))
 	case msg = <-entry.ChDown:
 	}
 
@@ -189,7 +208,7 @@ func (entry *Entry) Copy() *Entry {
 
 	entry2, err := deep_copy.Copy(entry)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:166 / *** at \"entry2, err := deep_copy.Copy( entry)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:185 / *** at \"entry2, err := deep_copy.Copy( entry)\": %v", err))
 	}
 
 	return entry2.(*Entry)
@@ -199,26 +218,33 @@ type Writer struct {
 	Entry *Entry
 }
 
-func (w *Writer) Write(p []byte) (n int, err error) {
-	w.Entry.Log(string(p))
-	n = len(p)
-	return
-}
-
 func (entry *Entry) Writer() (w io.Writer) {
 	w = &Writer{
 		Entry: entry,
 	}
 	return w
 }
+func (w *Writer) Write(p []byte) (n int, err error) {
+	w.Entry.Log(string(p))
+	n = len(p)
+	return
+}
 
 // If you use filtertag.Writer(), the message end up logged as a text string in "msg" JSON key;
 // that's not what we want here. Therefore, we will use a unique feature of filtertag,
-// the WriterNestedJSON() function, which will nest the output as nested struct into
+// the WriterNestedJSON() function, which will nest the output as nested struct into the
 // specified JSON key.
 type WriterNestedJSON struct {
 	Entry         *Entry
 	KeyNestedJSON string
+}
+
+func (entry *Entry) WriterNestedJSON(key string) (w io.Writer) {
+	w = &WriterNestedJSON{
+		Entry:         entry,
+		KeyNestedJSON: key,
+	}
+	return w
 }
 
 func (w *WriterNestedJSON) Write(p []byte) (n int, err error) {
@@ -234,12 +260,8 @@ func (w *WriterNestedJSON) Write(p []byte) (n int, err error) {
 	return
 }
 
-func (entry *Entry) WriterNestedJSON(key string) (w io.Writer) {
-	w = &WriterNestedJSON{
-		Entry:         entry,
-		KeyNestedJSON: key,
-	}
-	return w
+func (w *WriterNestedJSON) WriteStruct() {
+	return
 }
 
 // Normal, base logging func
@@ -250,19 +272,22 @@ func (entry *Entry) Logft(
 ) {
 	var err error
 
+	// save default filtertag
 	if ft, ok := entry.Fields["filtertag"]; ok {
 		entry.prev_entry_filtertag = ft.(string)
 	} else {
 		entry.prev_entry_filtertag = ""
 	}
 
-	entry.Fields["filtertag"] = strings.ToLower(filtertag)
+	entry.Fields["filtertag"] = strings.ToUpper(filtertag)
 	entry.Fields["msg"] = fmt.Sprintf(formatstring, args...)
+
+	// THIS MUST STAY HERE NO MATTER WHAT
 	entry.Fields["timestamp"] = time.Now().Format("2006-01-02 15:04:05.000 MST")
 
 	entry.rawline, err = json.Marshal(entry.Fields)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:276 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:308 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
 	}
 
 	entry.rawline = append(entry.rawline, []byte("\n")...)
@@ -277,7 +302,9 @@ func (entry *Entry) Logft(
 
 	entry.LoggerCh <- msg
 
+	// restore default filtertag, if it was set
 	entry.Fields["filtertag"] = entry.prev_entry_filtertag
+
 	entry.Fields["err"] = ""
 	entry.Fields["msg"] = ""
 }
@@ -291,107 +318,126 @@ func (entry *Entry) Log(
 	if ft, ok := entry.Fields["filtertag"]; ok {
 		filtertag = ft.(string)
 	} else {
-		filtertag = "info"
+		filtertag = "INPRODENV"
 	}
 
 	entry.Logft(filtertag, formatstring, args...)
 }
 
-// Filtertag="fatal", and as a special case it commands to exit the program (via ExitFunc / os.Exit())
-func (entry *Entry) Fatal(
+// Log and exit the app
+func (entry *Entry) ExitFunc(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("fatal", formatstring, args...)
-	entry.LoggerCh <- &LoggerChType{Command: Cmd_FatalExit}
+	entry.Logft("EXITFUNC", formatstring, args...)
+	entry.LoggerCh <- &LoggerChType{Command: Cmd_ExitFunc}
 }
 
-// Filtertag="panic", and as a special case it panics
-func (entry *Entry) Panic(
+func (entry *Entry) InTestEnv(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("panic", formatstring, args...)
-	err := fmt.Errorf(formatstring, args...)
-	panic(err)
+	entry.Logft("INTESTENV", formatstring, args...)
+}
+func (entry *Entry) InProdEnv(
+	formatstring string,
+	args ...interface{},
+) {
+	entry.Logft("INPRODENV", formatstring, args...)
+}
+func (entry *Entry) InvestigateTomorrow(
+	formatstring string,
+	args ...interface{},
+) {
+	entry.Logft("INVESTIGATETOMORROW", formatstring, args...)
+}
+func (entry *Entry) WakeMeInTheMiddleOfTheNight(
+	formatstring string,
+	args ...interface{},
+) {
+	entry.Logft("WAKEMEINTHEMIDDLEOFTHENIGHT", formatstring, args...)
 }
 
-// A synonymical funcs follow
-func (entry *Entry) Trace(
-	formatstring string,
-	args ...interface{},
-) {
-	entry.Logft("trace", formatstring, args...)
+// A synonymical old-style funcs follow
+type ClassicEntry struct {
+	Entry *Entry
 }
 
-func (entry *Entry) Debug(
+func (classic *ClassicEntry) Trace(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("debug", formatstring, args...)
+	classic.Entry.Logft("TRACE", formatstring, args...)
 }
 
-func (entry *Entry) Info(
+func (classic *ClassicEntry) Debug(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("info", formatstring, args...)
+	classic.Entry.Logft("DEBUG", formatstring, args...)
 }
 
-func (entry *Entry) Warning(
+func (classic *ClassicEntry) Info(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("warning", formatstring, args...)
+	classic.Entry.Logft("INFO", formatstring, args...)
 }
 
-func (entry *Entry) Error(
+func (classic *ClassicEntry) Warning(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("error", formatstring, args...)
+	classic.Entry.Logft("WARNING", formatstring, args...)
 }
 
-func (entry *Entry) Emergency(
+func (classic *ClassicEntry) Error(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("emergency", formatstring, args...)
+	classic.Entry.Logft("ERROR", formatstring, args...)
 }
 
-func (entry *Entry) Alert(
+func (classic *ClassicEntry) Emergency(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("alert", formatstring, args...)
+	classic.Entry.Logft("EMERGENCY", formatstring, args...)
 }
 
-func (entry *Entry) Critical(
+func (classic *ClassicEntry) Alert(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("critical", formatstring, args...)
+	classic.Entry.Logft("ALERT", formatstring, args...)
 }
 
-func (entry *Entry) Warn(
+func (classic *ClassicEntry) Critical(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("warn", formatstring, args...)
+	classic.Entry.Logft("CRITICAL", formatstring, args...)
 }
 
-func (entry *Entry) Notice(
+func (classic *ClassicEntry) Warn(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("notice", formatstring, args...)
+	classic.Entry.Logft("WARN", formatstring, args...)
 }
 
-func (entry *Entry) Informational(
+func (classic *ClassicEntry) Notice(
 	formatstring string,
 	args ...interface{},
 ) {
-	entry.Logft("informational", formatstring, args...)
+	classic.Entry.Logft("NOTICE", formatstring, args...)
+}
+
+func (classic *ClassicEntry) Informational(
+	formatstring string,
+	args ...interface{},
+) {
+	classic.Entry.Logft("INFORMATIONAL", formatstring, args...)
 }
 
 func Hello() {
