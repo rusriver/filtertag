@@ -132,7 +132,7 @@ nature of logging, and the fact that we have a buffer on the channel.)~ BAD IDEA
     - NSQ IO Writer
     - Remove hardcoded main chan limits to the Config (left default the 500)
     - func (w *WriterNestedJSON) WriteStruct()
-- Integrate with terr package
+- Integrate with terr package (idiom how to set those tags inside some Field as an array);
 - Switch default output serialization format from JSON to Serk, ditch JSON support altogether. (Q: how about Loki
     integration? A: convert enroute in NSQ)
 - Introduce a more lightweight and high-speed alternative to Logft(), which will use template with the pre-Marchaled data,
