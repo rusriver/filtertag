@@ -18,12 +18,13 @@ __Interesting__: this library is 100% thread-safe, and has zero locks/mutexes. I
 
 # Version history
 
-This package DOES NOT use Go's version conventions, sorry for that, it's intentional. Breaking changes are inroduced right onto
-a master branch, and if you want your old code to work and work as expected, just depend on older git commits.
+This package DOES NOT use Go's version conventions any more, sorry for that, it's intentional decision.
+Breaking changes are inroduced right onto a master branch, and if you want your old code to work and work
+as expected, just depend on older git commits.
 
 ### 20210603-140715 {e7ec1210844471022e314bf62d2c5250c260bdf2}
 
-This is version 1, battle-tested, the very first published on the open Internet.
+This is version 1, battle-tested, the very first one published on the open Internet.
 
 ### 2021-11-14 on
 
