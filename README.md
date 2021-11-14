@@ -28,7 +28,42 @@ This is version 1, battle-tested, the very first one published on the open Inter
 
 ### 2021-11-14 on
 
-Refactoring according to the idea of Daniel Lebrero (https://labs.ig.com/logging-level-wrong-abstraction).
+Log levels (filtertags) refactoring according to the idea of Daniel Lebrero (https://labs.ig.com/logging-level-wrong-abstraction).
+
+Also, there was this point of view https://www.reddit.com/r/programming/comments/66ftqf/comment/dgjhyt4/?utm_source=share&utm_medium=web2x&context=3
+Quote:
+
+IME there are three basic types of logging:
+
+- human: the message should be seen by human operators
+- developer: the message should be seen by a developer maintaining the project
+- administrator: the message should be seen by the person administering the system
+
+The whole idea of 7 or 8 log levels that are only vaguely distinguishable is completely over-engineered. Add to that the horrible syslog(3) API and Byzantine rules around what shows up in the log by default and what doesn't, and you've got everyone just shrugging and using LOG_NOTICE because that's the one that shows up in the log without being an error or warning of some kind.
+
+END OF QUOTE
+
+I don't quite agree, but it looks tempting (I even started to implement something like this, then quit).
+__Let's clarify how it's supposed to work in real life:__
+
+- There are testing/dev environments, where all logs are non-critical by definition. Period.
+- There are prod environments, where logs are collected, monitored, filtered, and some reaction must happen:
+    - In prod, __all logs first go to the administrator/devops__, then he/she may choose to alert a developer,
+        even in the middle of the night.
+    - Filtering may happen in several places, and have different effect:
+        - Filtering at the source - this is what this library does, in particular;
+        - Filtering/re-routing at the transport, when some logs leads to alerts in the middle of the night,
+            some lead to to-be-investigated list, etc.
+    - Therefore, we don't need human/admin/dev tags, just because on the prod everything goes whom
+        it's intended or who is responsible by default. And then may be proxied to other parties.
+- __Routing/filtering logs at transport/storage/analysis stages may work based on any data inside the log lines;
+    but at the source, in this lib, we are specifically interested in answering the very simple question:
+    should this particular log line be logged, or should it be dropped? (and "dropped" means nobody nowhere
+    will be able to see it). This means:__
+    - InTestEnv is enabled in testing/dev environment, and typically is disabled in prod;
+    - InProdEnv is always enabled; synonym for classic "info";
+    - InvestigateTomorrow and WakeMeInTheMiddleOfTheNight are also always enabled, and serve for filtering
+        at the action-taking stage.... basically these aren't levels at all.
 
 The updated working set of logging functions is as follows, with according filtertags:
 
