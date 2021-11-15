@@ -76,7 +76,7 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 		logger.ExitFunc(1)
 	}
 
-	ch_i1 := make(chan *LoggerChType, 502)
+	ch_i1 := make(chan *LoggerChType, 500+2)
 	host, err := os.Hostname()
 	if err != nil {
 		panic(fmt.Errorf("!!! filtertag.go:81 / *** at \"host, err	:= os.Hostname()\": %v", err))
@@ -108,12 +108,15 @@ func MakePrimordialEntryWithLogger(ctx context.Context) (entry *Entry) {
 				if len(ch_i1) >= 500 {
 					logger.OverflowFunc()
 				}
+				if len(ch_i1) >= 500/2 {
+					entry.Alert([]string{"LOGGER"}, "Logger input channel reached dangerous levels - risk of overflow and crash")
+				}
 				switch msg.Command {
 				case Cmd_WriteLine:
 					if v, ok := logger.Filtertags[msg.CookedLogLine.Filtertag]; ok && v == true {
 						_, err = logger.Output.Write(msg.CookedLogLine.RawLine)
 						if err != nil {
-							panic(fmt.Errorf("!!! filtertag.go:109 / *** at \"_, err = logger.Output.Write( msg.CookedLogLine.RawLine )\": %v", err))
+							panic(fmt.Errorf("!!! filtertag.go:112 / *** at \"_, err = logger.Output.Write( msg.CookedLogLine.RawLine )\": %v", err))
 						}
 					}
 				case Cmd_GetLogger:
@@ -208,7 +211,7 @@ func (entry *Entry) Copy() *Entry {
 
 	entry2, err := deep_copy.Copy(entry)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:185 / *** at \"entry2, err := deep_copy.Copy( entry)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:188 / *** at \"entry2, err := deep_copy.Copy( entry)\": %v", err))
 	}
 
 	return entry2.(*Entry)
@@ -287,7 +290,7 @@ func (entry *Entry) Logft(
 
 	entry.rawline, err = json.Marshal(entry.Fields)
 	if err != nil {
-		panic(fmt.Errorf("!!! filtertag.go:308 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
+		panic(fmt.Errorf("!!! filtertag.go:311 / *** at \"entry.rawline, err = json.Marshal( entry.Fields)\": %v", err))
 	}
 
 	entry.rawline = append(entry.rawline, []byte("\n")...)
