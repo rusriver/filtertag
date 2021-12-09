@@ -1,4 +1,4 @@
-# filtertag
+# filtertag [![GoDoc](https://godoc.org/github.com/rusriver/filtertag?status.png)](https://godoc.org/github.com/rusriver/filtertag)
 
 The structured logging source/emitter library for Go.
 
